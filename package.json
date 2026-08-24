@@ -1,0 +1,9 @@
+{
+  "name": "cosmic-newsseller",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cosmic Newsseller landing page with a real, LLM-backed Cosmic Bear chat assistant.",
+  "engines": {
+    "node": ">=18"
+  }
+}
