@@ -130,10 +130,6 @@ module.exports = async (req, res) => {
 
     if (!upstream.ok) {
       const errText = await upstream.text().catch(() => '');
-      // TEMPORARY debug line -- shows Google's exact response in Vercel's
-      // Logs. Deliberately does NOT log `url`, since it now contains the
-      // API key as a query parameter.
-      console.error('[cosmic-bear-debug] model=', GEMINI_MODEL, 'status=', upstream.status, 'body=', errText.slice(0, 300));
       // 503 means Google's servers are temporarily overloaded -- common on
       // the free tier during high demand. Give the visitor a plain-language
       // message instead of a raw error code, and a lighter HTTP status so
