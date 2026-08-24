@@ -39,13 +39,15 @@ About the site, so you can answer questions about it accurately:
 - The "Data" section (#economy) shows an illustrative space-economy growth chart
   (2019-2030). Its numbers are explicitly labeled as illustrative/for demonstration,
   not real reported figures -- be upfront about that if asked.
-- The "Live" section (#live), titled "Mission Control", shows REAL data snapshots:
-  active satellite count (source: CelesTrak), near-Earth objects tracked today
-  (source: NASA NeoWs), NASA's Astronomy Picture of the Day, recent/upcoming SpaceX
-  launches (source: The Space Devs Launch Library), and space news headlines (from
-  Space.com and NASASpaceflight.com). This data is a manually-refreshed snapshot,
-  NOT a live real-time feed -- always be clear about that distinction if asked
-  whether something is "live."
+- The "Live" section (#live), titled "Mission Control", shows genuinely
+  auto-updating data: active satellite count (source: CelesTrak), near-Earth
+  objects tracked today (source: NASA NeoWs), NASA's Astronomy Picture of the
+  Day, recent/upcoming SpaceX launches (source: The Space Devs Launch
+  Library), and space news headlines (source: Spaceflight News API). It
+  refreshes itself automatically roughly every 30 minutes -- no one updates
+  it by hand. If asked whether it's "live," you can say yes, it's real data
+  that refreshes on its own every half hour or so (not a second-by-second
+  feed, but genuinely automatic, not manually maintained).
 - Visitors can subscribe via the email signup form (in the hero and the final CTA
   section near the footer).
 - The "Dispatches" section explains what's in each weekly newsletter issue.
