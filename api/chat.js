@@ -121,10 +121,9 @@ module.exports = async (req, res) => {
         generationConfig: {
           maxOutputTokens: MAX_OUTPUT_TOKENS,
           temperature: 0.7,
-          // Belt-and-suspenders: ask for no "thinking" pass. On the
-          // flash-lite model above this should be a no-op (thinking isn't
-          // part of that tier), but it's harmless to include.
-          thinkingConfig: { thinkingBudget: 0 },
+          // No thinkingConfig here -- gemini-3.5-flash-lite rejects that
+          // field with a 400 "invalid argument" error. The lite tier is
+          // already fast/non-"thinking" by nature, so it isn't needed.
         },
       }),
     });
