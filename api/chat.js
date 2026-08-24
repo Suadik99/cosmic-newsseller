@@ -107,16 +107,15 @@ module.exports = async (req, res) => {
   const timeout = setTimeout(() => controller.abort(), 25000);
 
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_MODEL)}:generateContent`;
-    // TEMPORARY debug line -- confirms the key is really being read (never
-    // prints the full key, just its length and first few characters).
-    console.error('[cosmic-bear-debug] model=', GEMINI_MODEL, 'keyLen=', apiKey.length, 'keyStart=', apiKey.slice(0, 4));
+    // The key goes right in the address (?key=...) -- the same way it works
+    // when pasted into a browser URL -- rather than in a request header.
+    // Some newer-format Gemini keys aren't recognized via the header.
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_MODEL)}:generateContent?key=${encodeURIComponent(apiKey)}`;
     const upstream = await fetch(url, {
       method: 'POST',
       signal: controller.signal,
       headers: {
         'content-type': 'application/json',
-        'x-goog-api-key': apiKey,
       },
       body: JSON.stringify({
         contents: contents,
@@ -134,9 +133,10 @@ module.exports = async (req, res) => {
 
     if (!upstream.ok) {
       const errText = await upstream.text().catch(() => '');
-      // TEMPORARY debug line -- shows up in Vercel's Logs so we can see
-      // exactly what URL was called and exactly what Google said back.
-      console.error('[cosmic-bear-debug] url=', url, 'status=', upstream.status, 'body=', errText.slice(0, 300));
+      // TEMPORARY debug line -- shows Google's exact response in Vercel's
+      // Logs. Deliberately does NOT log `url`, since it now contains the
+      // API key as a query parameter.
+      console.error('[cosmic-bear-debug] model=', GEMINI_MODEL, 'status=', upstream.status, 'body=', errText.slice(0, 300));
       // 503 means Google's servers are temporarily overloaded -- common on
       // the free tier during high demand. Give the visitor a plain-language
       // message instead of a raw error code, and a lighter HTTP status so
