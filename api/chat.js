@@ -17,14 +17,12 @@
 //      project settings (or `.env` locally with `vercel dev`).
 //   3. Optionally set GEMINI_MODEL to override the default model below.
 
-// gemini-2.5-flash-lite is Google's fastest, lightest, most free-tier-
-// friendly model. Bigger "flash" models (2.5-flash, 3.x-flash) have a
-// "thinking" step that's supposed to be turned off by thinkingBudget: 0
-// below, but that's an unreliable known bug on several Flash models -- it
-// can silently keep thinking anyway, causing multi-minute replies and
-// eventual 503 "model is overloaded" errors. The lite tier avoids that
-// class of problem entirely, which is what this chat widget needs.
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite';
+// gemini-3.5-flash-lite: the "lite" tier is Google's fastest, cheapest,
+// most free-tier-friendly option (bigger "flash" models have a slow
+// "thinking" step that thinkingBudget: 0 below doesn't always fully turn
+// off). gemini-2.5-flash-lite used to be the pick here, but Google retired
+// it for new callers -- their API told us directly to switch to this one.
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
 const MAX_OUTPUT_TOKENS = 500;
 const MAX_HISTORY_MESSAGES = 20; // trims long conversations before they're sent
 const MAX_MESSAGE_CHARS = 4000; // per-message cap, guards against huge pastes
