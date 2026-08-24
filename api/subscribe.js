@@ -24,7 +24,14 @@ async function upstash(command) {
   const res = await fetch(`${url}/${path}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
-  if (!res.ok) return null;
+  if (!res.ok) {
+    // Temporary debug line -- shows up in Vercel's Logs tab so we can see
+    // exactly why the Upstash call failed. Safe to remove once this is
+    // working reliably.
+    const errText = await res.text().catch(() => '');
+    console.error('[cosmic-bear-debug] upstash call failed: status=', res.status, 'body=', errText.slice(0, 300));
+    return null;
+  }
   const data = await res.json().catch(() => null);
   return data ? data.result : null;
 }
