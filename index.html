@@ -651,81 +651,54 @@
   <section id="live">
     <div class="container">
       <div class="section-head">
-        <span class="eyebrow">Real signal, synced by hand</span>
+        <span class="eyebrow">Real signal, auto-synced</span>
         <h2>Mission control.</h2>
-        <p>Genuine snapshots pulled from NASA, CelesTrak, and The Space Devs &mdash; refreshed periodically, not a live connection. Last synced August 24, 2026.</p>
+        <p>Genuine snapshots pulled live from NASA, CelesTrak, The Space Devs, and Spaceflight News API &mdash; refreshed automatically every 30 minutes. <span id="mc-updated">Loading latest data&hellip;</span></p>
       </div>
 
-      <div class="stat-row" style="max-width:920px;margin-left:auto;margin-right:auto;">
+      <div class="stat-row" style="max-width:920px;margin-left:auto;margin-right:auto;" id="mc-stats">
         <div class="stat-tile">
-          <div class="num">16,394</div>
+          <div class="num" id="mc-sat-num">&mdash;</div>
           <div class="label">Active satellites tracked in orbit</div>
-          <div class="foot">CelesTrak catalog &middot; Aug 23, 2026</div>
+          <div class="foot" id="mc-sat-foot">CelesTrak catalog</div>
         </div>
         <div class="stat-tile">
-          <div class="num">4</div>
+          <div class="num" id="mc-neo-num">&mdash;</div>
           <div class="label">Near-Earth objects tracked today</div>
-          <div class="foot">NASA NeoWs &middot; none hazardous</div>
+          <div class="foot" id="mc-neo-foot">NASA NeoWs</div>
         </div>
         <div class="stat-tile">
-          <div class="num">Aug 25</div>
-          <div class="label">Next confirmed launch: Falcon&nbsp;9 / Starlink</div>
-          <div class="foot">05:49 UTC &middot; Cape Canaveral SFS</div>
+          <div class="num" id="mc-launch-date">&mdash;</div>
+          <div class="label" id="mc-launch-label">Next confirmed launch</div>
+          <div class="foot" id="mc-launch-foot">The Space Devs</div>
         </div>
       </div>
 
       <div class="live-grid">
         <div class="live-card apod-card">
           <span class="src-tag">NASA &middot; Astronomy Picture of the Day</span>
-          <h3>Bright Perseids from Sweden</h3>
-          <div class="apod-art" aria-hidden="true"></div>
-          <p class="excerpt">A composite image records two bright Perseid meteors and a watery reflection near Grisslehamn, Sweden, captured near the shower&rsquo;s August&nbsp;12 peak &mdash; the same night as the year&rsquo;s solar eclipse.</p>
-          <div class="credit">Image credit: Clear Skies &middot; Aug 15, 2026</div>
-          <a class="out-link" href="https://apod.nasa.gov/apod/ap260815.html" target="_blank" rel="noopener">View the full image on NASA &rarr;</a>
+          <h3 id="mc-apod-title">Loading&hellip;</h3>
+          <div class="apod-art" id="mc-apod-art" aria-hidden="true"></div>
+          <p class="excerpt" id="mc-apod-excerpt">Fetching today&rsquo;s picture from NASA&hellip;</p>
+          <div class="credit" id="mc-apod-credit"></div>
+          <a class="out-link" id="mc-apod-link" href="https://apod.nasa.gov/apod/" target="_blank" rel="noopener">View the full image on NASA &rarr;</a>
         </div>
 
         <div class="live-card">
           <span class="src-tag">SpaceX launches &middot; The Space Devs</span>
           <h3>Launch log</h3>
-          <div class="launch-log">
-            <div class="row next"><span class="name"><span class="tag-next">Next</span>Falcon 9 &middot; Starlink 10-49</span><span class="meta">Aug 25, 05:49 UTC</span></div>
-            <div class="row"><span class="name">Falcon 9 &middot; Starlink 15-22</span><span class="meta">Aug 26, 09:27 UTC</span></div>
-            <div class="row"><span class="name">Falcon Heavy &middot; Roman Space Telescope</span><span class="meta">Aug 30, 11:26 UTC</span></div>
-            <div class="row"><span class="name status-ok">&#10003;&nbsp; Starlink 15-20</span><span class="meta">Aug 22 &middot; success</span></div>
-            <div class="row"><span class="name status-ok">&#10003;&nbsp; Starlink 10-39</span><span class="meta">Aug 21 &middot; success</span></div>
+          <div class="launch-log" id="mc-launch-log">
+            <div class="row"><span class="name">Loading launch data&hellip;</span><span class="meta"></span></div>
           </div>
           <a class="out-link" href="https://www.spacex.com/launches/" target="_blank" rel="noopener">Full manifest on SpaceX &rarr;</a>
         </div>
       </div>
 
       <div class="live-card news-card">
-        <span class="src-tag">Space news &middot; Space.com &amp; NASASpaceflight.com</span>
+        <span class="src-tag">Space news &middot; live headlines</span>
         <h3>Headlines this week</h3>
-        <div class="news-grid">
-          <a class="news-item" href="https://www.space.com/space-exploration/launches-spacecraft/bad-weather-delays-launch-of-chinas-historic-change-7-mission-to-moons-south-pole" target="_blank" rel="noopener">
-            <span class="arrow">&rarr;</span>
-            <span><span class="news-title">Bad weather delays launch of China&rsquo;s historic Chang&rsquo;e&nbsp;7 mission to moon&rsquo;s south pole</span><span class="news-meta">Space.com &middot; Aug 23, 2026</span></span>
-          </a>
-          <a class="news-item" href="https://www.nasaspaceflight.com/2026/08/ship-41-engine-testing-flight-14/" target="_blank" rel="noopener">
-            <span class="arrow">&rarr;</span>
-            <span><span class="news-title">Ship 41 completes engine testing ahead of Flight 14</span><span class="news-meta">NASASpaceflight.com &middot; Aug 21, 2026</span></span>
-          </a>
-          <a class="news-item" href="https://www.space.com/astronomy/sun/how-a-huge-fleet-of-17-spacecraft-discovered-something-surprising-about-solar-eruptions" target="_blank" rel="noopener">
-            <span class="arrow">&rarr;</span>
-            <span><span class="news-title">How a fleet of 17 spacecraft discovered something surprising about solar eruptions</span><span class="news-meta">Space.com &middot; Aug 23, 2026</span></span>
-          </a>
-          <a class="news-item" href="https://www.nasaspaceflight.com/2026/08/zhuque-3-second-flight-successful-landing/" target="_blank" rel="noopener">
-            <span class="arrow">&rarr;</span>
-            <span><span class="news-title">Zhuque-3 completes second flight with successful first-stage landing</span><span class="news-meta">NASASpaceflight.com &middot; Aug 19, 2026</span></span>
-          </a>
-          <a class="news-item" href="https://www.space.com/technology/launching-10-000-tiny-femtosats-to-saturn-nasa-funds-18-futuristic-spaceflight-ideas" target="_blank" rel="noopener">
-            <span class="arrow">&rarr;</span>
-            <span><span class="news-title">Launching 10,000 tiny &ldquo;femtosats&rdquo; to Saturn? NASA funds 18 futuristic spaceflight ideas</span><span class="news-meta">Space.com &middot; Aug 23, 2026</span></span>
-          </a>
-          <a class="news-item" href="https://www.nasaspaceflight.com/2026/08/launch-preview-081726/" target="_blank" rel="noopener">
-            <span class="arrow">&rarr;</span>
-            <span><span class="news-title">Launch preview: Chang&rsquo;e 7 headlines a week of Chinese and Starlink launches</span><span class="news-meta">NASASpaceflight.com &middot; Aug 17, 2026</span></span>
-          </a>
+        <div class="news-grid" id="mc-news-grid">
+          <div class="news-item"><span><span class="news-title">Loading the latest space news&hellip;</span></span></div>
         </div>
       </div>
 
@@ -733,9 +706,8 @@
         Sources: <a href="https://api.nasa.gov" target="_blank" rel="noopener">NASA Open APIs</a> &middot;
         <a href="https://celestrak.org" target="_blank" rel="noopener">CelesTrak</a> &middot;
         <a href="https://ll.thespacedevs.com" target="_blank" rel="noopener">The Space Devs Launch Library</a> &middot;
-        <a href="https://www.space.com" target="_blank" rel="noopener">Space.com</a> &middot;
-        <a href="https://www.nasaspaceflight.com" target="_blank" rel="noopener">NASASpaceflight.com</a>.<br>
-        This is a manual snapshot, not a live feed &mdash; just ask and it gets refreshed.
+        <a href="https://www.spaceflightnewsapi.net" target="_blank" rel="noopener">Spaceflight News API</a>.<br>
+        This section refreshes itself automatically &mdash; no one has to update it by hand.
       </p>
     </div>
   </section>
@@ -1404,6 +1376,125 @@
   quickEl.querySelectorAll('.bc-chip').forEach(function(chip){
     chip.addEventListener('click', function(){ sendMessage(chip.getAttribute('data-q')); });
   });
+})();
+</script>
+
+<script>
+// Mission Control auto-update: fetches /api/mission-control (which itself
+// pulls from NASA, CelesTrak, The Space Devs, and Spaceflight News API)
+// and fills in the "Live" section. If anything fails or is missing, the
+// original static wording stays put for that piece -- nothing breaks.
+(function(){
+  function fmtShortDate(iso){
+    if (!iso) return null;
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return null;
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+  }
+  function fmtTime(iso){
+    if (!iso) return '';
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }) + ' UTC';
+  }
+  function fmtRelative(iso){
+    if (!iso) return '';
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    var mins = Math.round((Date.now() - d.getTime()) / 60000);
+    if (mins < 2) return 'just now';
+    if (mins < 60) return mins + ' min ago';
+    var hrs = Math.round(mins / 60);
+    if (hrs < 24) return hrs + (hrs === 1 ? ' hour ago' : ' hours ago');
+    return Math.round(hrs / 24) + 'd ago';
+  }
+  function text(id, value){
+    var el = document.getElementById(id);
+    if (el && value != null && value !== '') el.textContent = value;
+  }
+
+  fetch('/api/mission-control')
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(data){
+      if (!data) return;
+
+      text('mc-updated', 'Last updated ' + (fmtRelative(data.generatedAt) || 'just now') + '.');
+
+      if (data.satellites && data.satellites.count) {
+        text('mc-sat-num', data.satellites.count.toLocaleString('en-US'));
+        text('mc-sat-foot', 'CelesTrak catalog · live');
+      }
+
+      if (data.neo) {
+        text('mc-neo-num', String(data.neo.count));
+        text('mc-neo-foot', 'NASA NeoWs · ' + (data.neo.hazardous > 0
+          ? (data.neo.hazardous + ' potentially hazardous')
+          : 'none hazardous'));
+      }
+
+      if (data.launches && data.launches.upcoming && data.launches.upcoming[0]) {
+        var next = data.launches.upcoming[0];
+        text('mc-launch-date', fmtShortDate(next.net) || '—');
+        text('mc-launch-label', 'Next confirmed launch: ' + next.name);
+        text('mc-launch-foot', (fmtTime(next.net) || '') + (next.pad ? ' · ' + next.pad : ''));
+
+        var logEl = document.getElementById('mc-launch-log');
+        if (logEl) {
+          var rows = [];
+          (data.launches.upcoming || []).forEach(function(l, i){
+            rows.push(
+              '<div class="row' + (i === 0 ? ' next' : '') + '">' +
+              '<span class="name">' + (i === 0 ? '<span class="tag-next">Next</span>' : '') + escapeHtml(l.name) + '</span>' +
+              '<span class="meta">' + (fmtShortDate(l.net) || '') + (l.net ? ', ' + fmtTime(l.net) : '') + '</span>' +
+              '</div>'
+            );
+          });
+          (data.launches.previous || []).forEach(function(l){
+            rows.push(
+              '<div class="row"><span class="name' + (l.success ? ' status-ok' : '') + '">' +
+              (l.success ? '✓  ' : '') + escapeHtml(l.name) + '</span>' +
+              '<span class="meta">' + (fmtShortDate(l.net) || '') + (l.success ? ' · success' : '') + '</span></div>'
+            );
+          });
+          if (rows.length) logEl.innerHTML = rows.join('');
+        }
+      }
+
+      if (data.apod) {
+        text('mc-apod-title', data.apod.title);
+        text('mc-apod-excerpt', data.apod.explanation);
+        text('mc-apod-credit', 'Image credit: ' + data.apod.credit + (data.apod.date ? ' · ' + data.apod.date : ''));
+        var artEl = document.getElementById('mc-apod-art');
+        if (artEl && data.apod.imageUrl) {
+          artEl.style.backgroundImage = 'url(' + JSON.stringify(data.apod.imageUrl).slice(1, -1) + ')';
+          artEl.style.backgroundSize = 'cover';
+          artEl.style.backgroundPosition = 'center';
+        }
+        var linkEl = document.getElementById('mc-apod-link');
+        if (linkEl && data.apod.permalink) linkEl.href = data.apod.permalink;
+      }
+
+      if (data.news && data.news.length) {
+        var newsEl = document.getElementById('mc-news-grid');
+        if (newsEl) {
+          newsEl.innerHTML = data.news.map(function(a){
+            return '<a class="news-item" href="' + escapeAttr(a.url) + '" target="_blank" rel="noopener">' +
+              '<span class="arrow">→</span>' +
+              '<span><span class="news-title">' + escapeHtml(a.title) + '</span>' +
+              '<span class="news-meta">' + escapeHtml(a.site) + (a.publishedAt ? ' · ' + fmtShortDate(a.publishedAt) : '') + '</span></span>' +
+              '</a>';
+          }).join('');
+        }
+      }
+    })
+    .catch(function(){ /* keep static fallback content as-is */ });
+
+  function escapeHtml(s){
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+    });
+  }
+  function escapeAttr(s){ return escapeHtml(s); }
 })();
 </script>
 </body>
