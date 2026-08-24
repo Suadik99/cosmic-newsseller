@@ -17,7 +17,7 @@
 //      project settings (or `.env` locally with `vercel dev`).
 //   3. Optionally set GEMINI_MODEL to override the default model below.
 
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.7-flash';
 const MAX_OUTPUT_TOKENS = 500;
 const MAX_HISTORY_MESSAGES = 20; // trims long conversations before they're sent
 const MAX_MESSAGE_CHARS = 4000; // per-message cap, guards against huge pastes
@@ -95,53 +95,3 @@ module.exports = async (req, res) => {
 
   try {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_MODEL)}:generateContent`;
-    const upstream = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'x-goog-api-key': apiKey,
-      },
-      body: JSON.stringify({
-        contents: contents,
-        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-        generationConfig: {
-          maxOutputTokens: MAX_OUTPUT_TOKENS,
-          temperature: 0.7,
-        },
-      }),
-    });
-
-    if (!upstream.ok) {
-      const errText = await upstream.text().catch(() => '');
-      res.status(upstream.status >= 400 && upstream.status < 600 ? upstream.status : 502).json({
-        error: 'upstream_error',
-        detail: errText.slice(0, 500),
-      });
-      return;
-    }
-
-    const data = await upstream.json();
-
-    // A response can come back with no candidates if Gemini's safety
-    // filters blocked it -- handle that as a normal (not thrown) case.
-    const blockReason = data && data.promptFeedback && data.promptFeedback.blockReason;
-    const candidate = data && Array.isArray(data.candidates) ? data.candidates[0] : null;
-    const parts = candidate && candidate.content && Array.isArray(candidate.content.parts)
-      ? candidate.content.parts
-      : [];
-    const reply = parts.map((p) => p.text || '').join('');
-
-    if (!reply) {
-      res.status(200).json({
-        reply: blockReason
-          ? "I can't answer that one -- it tripped a safety filter on my end. Try asking it a different way?"
-          : "I'm not sure how to answer that one -- could you rephrase?",
-      });
-      return;
-    }
-
-    res.status(200).json({ reply });
-  } catch (err) {
-    res.status(500).json({ error: 'server_error', detail: String((err && err.message) || err) });
-  }
-};
