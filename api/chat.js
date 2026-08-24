@@ -17,7 +17,14 @@
 //      project settings (or `.env` locally with `vercel dev`).
 //   3. Optionally set GEMINI_MODEL to override the default model below.
 
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.7-flash';
+// gemini-2.5-flash-lite is Google's fastest, lightest, most free-tier-
+// friendly model. Bigger "flash" models (2.5-flash, 3.x-flash) have a
+// "thinking" step that's supposed to be turned off by thinkingBudget: 0
+// below, but that's an unreliable known bug on several Flash models -- it
+// can silently keep thinking anyway, causing multi-minute replies and
+// eventual 503 "model is overloaded" errors. The lite tier avoids that
+// class of problem entirely, which is what this chat widget needs.
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite';
 const MAX_OUTPUT_TOKENS = 500;
 const MAX_HISTORY_MESSAGES = 20; // trims long conversations before they're sent
 const MAX_MESSAGE_CHARS = 4000; // per-message cap, guards against huge pastes
@@ -93,10 +100,17 @@ module.exports = async (req, res) => {
     return;
   }
 
+  // Don't let one slow/stuck request hang the visitor for minutes. If
+  // Gemini hasn't responded within 25 seconds, give up and show a friendly
+  // "try again" message instead of leaving the chat widget stuck spinning.
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 25000);
+
   try {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_MODEL)}:generateContent`;
     const upstream = await fetch(url, {
       method: 'POST',
+      signal: controller.signal,
       headers: {
         'content-type': 'application/json',
         'x-goog-api-key': apiKey,
@@ -107,12 +121,9 @@ module.exports = async (req, res) => {
         generationConfig: {
           maxOutputTokens: MAX_OUTPUT_TOKENS,
           temperature: 0.7,
-          // Newer Gemini models silently "think" (an invisible reasoning
-          // pass) before answering unless told not to -- that's what was
-          // causing the 79-215 second replies. Thinking tokens also eat
-          // into maxOutputTokens, which could leave little/no room for
-          // the actual answer -- explaining the "wrong" content too.
-          // Budget 0 turns thinking off for a fast, direct answer.
+          // Belt-and-suspenders: ask for no "thinking" pass. On the
+          // flash-lite model above this should be a no-op (thinking isn't
+          // part of that tier), but it's harmless to include.
           thinkingConfig: { thinkingBudget: 0 },
         },
       }),
@@ -120,6 +131,16 @@ module.exports = async (req, res) => {
 
     if (!upstream.ok) {
       const errText = await upstream.text().catch(() => '');
+      // 503 means Google's servers are temporarily overloaded -- common on
+      // the free tier during high demand. Give the visitor a plain-language
+      // message instead of a raw error code, and a lighter HTTP status so
+      // the widget doesn't treat it as fatal.
+      if (upstream.status === 503) {
+        res.status(200).json({
+          reply: "Mission control is getting a lot of traffic right now and couldn't get back to me in time. Give it a few seconds and try asking again?",
+        });
+        return;
+      }
       res.status(upstream.status >= 400 && upstream.status < 600 ? upstream.status : 502).json({
         error: 'upstream_error',
         detail: errText.slice(0, 500),
@@ -149,6 +170,16 @@ module.exports = async (req, res) => {
 
     res.status(200).json({ reply });
   } catch (err) {
+    // AbortError means our own 25-second timeout above fired -- Gemini was
+    // taking too long. Show a friendly message rather than a raw error.
+    if (err && err.name === 'AbortError') {
+      res.status(200).json({
+        reply: "Sorry, that's taking longer than it should. Mind trying again in a moment?",
+      });
+      return;
+    }
     res.status(500).json({ error: 'server_error', detail: String((err && err.message) || err) });
+  } finally {
+    clearTimeout(timeout);
   }
 };
