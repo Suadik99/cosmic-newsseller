@@ -108,6 +108,9 @@ module.exports = async (req, res) => {
 
   try {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_MODEL)}:generateContent`;
+    // TEMPORARY debug line -- confirms the key is really being read (never
+    // prints the full key, just its length and first few characters).
+    console.error('[cosmic-bear-debug] model=', GEMINI_MODEL, 'keyLen=', apiKey.length, 'keyStart=', apiKey.slice(0, 4));
     const upstream = await fetch(url, {
       method: 'POST',
       signal: controller.signal,
@@ -131,6 +134,9 @@ module.exports = async (req, res) => {
 
     if (!upstream.ok) {
       const errText = await upstream.text().catch(() => '');
+      // TEMPORARY debug line -- shows up in Vercel's Logs so we can see
+      // exactly what URL was called and exactly what Google said back.
+      console.error('[cosmic-bear-debug] url=', url, 'status=', upstream.status, 'body=', errText.slice(0, 300));
       // 503 means Google's servers are temporarily overloaded -- common on
       // the free tier during high demand. Give the visitor a plain-language
       // message instead of a raw error code, and a lighter HTTP status so
