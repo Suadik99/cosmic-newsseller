@@ -95,3 +95,60 @@ module.exports = async (req, res) => {
 
   try {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_MODEL)}:generateContent`;
+    const upstream = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-goog-api-key': apiKey,
+      },
+      body: JSON.stringify({
+        contents: contents,
+        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+        generationConfig: {
+          maxOutputTokens: MAX_OUTPUT_TOKENS,
+          temperature: 0.7,
+          // Newer Gemini models silently "think" (an invisible reasoning
+          // pass) before answering unless told not to -- that's what was
+          // causing the 79-215 second replies. Thinking tokens also eat
+          // into maxOutputTokens, which could leave little/no room for
+          // the actual answer -- explaining the "wrong" content too.
+          // Budget 0 turns thinking off for a fast, direct answer.
+          thinkingConfig: { thinkingBudget: 0 },
+        },
+      }),
+    });
+
+    if (!upstream.ok) {
+      const errText = await upstream.text().catch(() => '');
+      res.status(upstream.status >= 400 && upstream.status < 600 ? upstream.status : 502).json({
+        error: 'upstream_error',
+        detail: errText.slice(0, 500),
+      });
+      return;
+    }
+
+    const data = await upstream.json();
+
+    // A response can come back with no candidates if Gemini's safety
+    // filters blocked it -- handle that as a normal (not thrown) case.
+    const blockReason = data && data.promptFeedback && data.promptFeedback.blockReason;
+    const candidate = data && Array.isArray(data.candidates) ? data.candidates[0] : null;
+    const parts = candidate && candidate.content && Array.isArray(candidate.content.parts)
+      ? candidate.content.parts
+      : [];
+    const reply = parts.map((p) => p.text || '').join('');
+
+    if (!reply) {
+      res.status(200).json({
+        reply: blockReason
+          ? "I can't answer that one -- it tripped a safety filter on my end. Try asking it a different way?"
+          : "I'm not sure how to answer that one -- could you rephrase?",
+      });
+      return;
+    }
+
+    res.status(200).json({ reply });
+  } catch (err) {
+    res.status(500).json({ error: 'server_error', detail: String((err && err.message) || err) });
+  }
+};
