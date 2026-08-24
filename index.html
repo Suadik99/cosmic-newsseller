@@ -346,7 +346,7 @@
 <div class="hero-textbar">
   <p class="hero-sub">Cosmic Bear reads every launch manifest, funding round, and mission log so your Sunday doesn&rsquo;t have to. One dispatch a week, zero jargon.</p>
   <div class="hero-cta">
-    <form class="signup" onsubmit="return false">
+    <form class="signup">
       <label for="email" class="sr-only" style="position:absolute;left:-9999px;">Email address</label>
       <input id="email" type="email" placeholder="you@example.com" required autocomplete="email">
       <button class="btn" type="submit">Join the crew</button>
@@ -782,7 +782,7 @@
         <span class="eyebrow">Ready for launch</span>
         <h2>Don't miss the launch window.</h2>
         <p>One dispatch a week, straight from orbit. Free to join, easy to leave.</p>
-        <form class="signup" onsubmit="return false">
+        <form class="signup">
           <label for="email2" class="sr-only" style="position:absolute;left:-9999px;">Email address</label>
           <input id="email2" type="email" placeholder="you@example.com" required autocomplete="email">
           <button class="btn" type="submit">Subscribe for free</button>
@@ -1291,6 +1291,70 @@
   }
   function escapeAttr(s){ return escapeHtml(s); }
 })();
+</script>
+
+<script>
+  // ---- newsletter signup: wires up both "Join the crew" / "Subscribe for
+  // free" forms to actually save the email address (api/subscribe.js),
+  // instead of doing nothing (the old onsubmit="return false" placeholder).
+  (function(){
+    function wireForm(form){
+      var input = form.querySelector('input[type="email"]');
+      var button = form.querySelector('button[type="submit"]');
+      if (!input || !button) return;
+
+      var note = document.createElement('p');
+      note.setAttribute('aria-live', 'polite');
+      note.style.cssText = 'margin:10px 0 0;font-size:.85rem;line-height:1.4;';
+      form.insertAdjacentElement('afterend', note);
+
+      form.addEventListener('submit', function(ev){
+        ev.preventDefault();
+        var email = (input.value || '').trim();
+        if (!email) return;
+
+        button.disabled = true;
+        var originalText = button.textContent;
+        button.textContent = 'Joining…';
+        note.textContent = '';
+
+        fetch('/api/subscribe', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ email: email })
+        })
+          .then(function(r){
+            return r.json().catch(function(){ return null; }).then(function(data){
+              return { ok: r.ok, data: data };
+            });
+          })
+          .then(function(result){
+            if (result.ok && result.data && result.data.ok) {
+              note.textContent = "You're in! Watch your inbox for the next dispatch.";
+              note.style.color = '#8fe3c7';
+              input.value = '';
+            } else if (result.data && result.data.error === 'invalid_email') {
+              note.textContent = "That email address doesn't look quite right — mind double-checking it?";
+              note.style.color = '#ff9b8a';
+            } else {
+              note.textContent = "Something went wrong on our end. Mind trying again in a moment?";
+              note.style.color = '#ff9b8a';
+            }
+          })
+          .catch(function(){
+            note.textContent = "Couldn't reach the server — check your connection and try again.";
+            note.style.color = '#ff9b8a';
+          })
+          .finally(function(){
+            button.disabled = false;
+            button.textContent = originalText;
+          });
+      });
+    }
+
+    var forms = document.querySelectorAll('form.signup');
+    for (var i = 0; i < forms.length; i++) wireForm(forms[i]);
+  })();
 </script>
 </body>
 </html>
