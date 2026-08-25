@@ -545,7 +545,14 @@
 
   <style>
     /* ============ MISSION CONTROL (real, hand-synced data) ============ */
+    .mc-stat-row{ max-width:1080px; margin-left:auto; margin-right:auto; grid-template-columns:repeat(4,1fr); }
+    @media (max-width:900px){ .mc-stat-row{ grid-template-columns:repeat(2,1fr); } }
+    @media (max-width:680px){ .mc-stat-row{ grid-template-columns:1fr; } }
+
     .live-grid{ display:grid; grid-template-columns:1fr 1fr; gap:22px; margin-top:26px; max-width:920px; margin-left:auto; margin-right:auto; }
+    .mc-live-grid{ max-width:1080px; grid-template-columns:1fr 1fr 1fr; }
+    @media (max-width:1000px){ .mc-live-grid{ grid-template-columns:1fr 1fr; } }
+    @media (max-width:760px){ .mc-live-grid{ grid-template-columns:1fr; } }
     .live-card{
       border:1px solid var(--hull-edge); border-radius:var(--radius-lg);
       padding:24px clamp(20px,3vw,30px);
@@ -620,7 +627,7 @@
         <p>Genuine snapshots pulled live from NASA, CelesTrak, The Space Devs, and Spaceflight News API &mdash; refreshed automatically every 30 minutes. <span id="mc-updated">Loading latest data&hellip;</span></p>
       </div>
 
-      <div class="stat-row" style="max-width:920px;margin-left:auto;margin-right:auto;" id="mc-stats">
+      <div class="stat-row mc-stat-row" id="mc-stats">
         <div class="stat-tile">
           <div class="num" id="mc-sat-num">&mdash;</div>
           <div class="label">Active satellites tracked in orbit</div>
@@ -636,9 +643,14 @@
           <div class="label" id="mc-launch-label">Next confirmed launch</div>
           <div class="foot" id="mc-launch-foot">The Space Devs</div>
         </div>
+        <div class="stat-tile">
+          <div class="num" id="mc-weather-num">&mdash;</div>
+          <div class="label" id="mc-weather-label">Solar flares tracked (3 days)</div>
+          <div class="foot" id="mc-weather-foot">NASA DONKI</div>
+        </div>
       </div>
 
-      <div class="live-grid">
+      <div class="live-grid mc-live-grid">
         <div class="live-card apod-card">
           <span class="src-tag">NASA &middot; Astronomy Picture of the Day</span>
           <h3 id="mc-apod-title">Loading&hellip;</h3>
@@ -646,6 +658,15 @@
           <p class="excerpt" id="mc-apod-excerpt">Fetching today&rsquo;s picture from NASA&hellip;</p>
           <div class="credit" id="mc-apod-credit"></div>
           <a class="out-link" id="mc-apod-link" href="https://apod.nasa.gov/apod/" target="_blank" rel="noopener">View the full image on NASA &rarr;</a>
+        </div>
+
+        <div class="live-card apod-card">
+          <span class="src-tag">NASA &middot; Earth right now</span>
+          <h3 id="mc-earth-title">Loading&hellip;</h3>
+          <div class="apod-art" id="mc-earth-art" aria-hidden="true"></div>
+          <p class="excerpt" id="mc-earth-excerpt">Fetching the latest DSCOVR image&hellip;</p>
+          <div class="credit" id="mc-earth-credit"></div>
+          <a class="out-link" href="https://epic.gsfc.nasa.gov/" target="_blank" rel="noopener">More EPIC imagery on NASA &rarr;</a>
         </div>
 
         <div class="live-card">
@@ -1267,6 +1288,26 @@
         }
         var linkEl = document.getElementById('mc-apod-link');
         if (linkEl && data.apod.permalink) linkEl.href = data.apod.permalink;
+      }
+
+      if (data.epic) {
+        text('mc-earth-title', 'Earth, ' + (fmtShortDate(data.epic.date.replace(' ', 'T') + 'Z') || 'recently'));
+        text('mc-earth-excerpt', data.epic.caption);
+        text('mc-earth-credit', 'NASA EPIC / DSCOVR' + (data.epic.date ? ' · ' + fmtTime(data.epic.date.replace(' ', 'T') + 'Z') : ''));
+        var earthArtEl = document.getElementById('mc-earth-art');
+        if (earthArtEl && data.epic.imageUrl) {
+          earthArtEl.style.backgroundImage = 'url(' + JSON.stringify(data.epic.imageUrl).slice(1, -1) + ')';
+          earthArtEl.style.backgroundSize = 'cover';
+          earthArtEl.style.backgroundPosition = 'center';
+        }
+      }
+
+      if (data.spaceWeather) {
+        text('mc-weather-num', String(data.spaceWeather.flareCount));
+        text('mc-weather-label', 'Solar flares tracked (' + data.spaceWeather.windowDays + ' days)');
+        text('mc-weather-foot', 'NASA DONKI · ' + (data.spaceWeather.strongestFlare
+          ? 'strongest: ' + data.spaceWeather.strongestFlare
+          : (data.spaceWeather.flareCount > 0 ? 'in progress' : 'quiet')));
       }
 
       if (data.news && data.news.length) {
