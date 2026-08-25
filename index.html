@@ -283,10 +283,10 @@ details.data-table th:first-child,details.data-table td:first-child{text-align:l
 /* chart grid */
 .chart-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
 .chart-card{padding:20px;border-radius:var(--radius-lg);background:var(--color-surface);box-shadow:var(--shadow-sm);display:flex;flex-direction:column}
-.chart-card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
-.chart-card-head h3{font-size:16px;margin:0}
-.chart-src{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.04em;color:var(--color-neutral-600);
-  text-align:right;max-width:46%;line-height:1.5}
+.chart-card-head{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:8px 14px}
+.chart-card-head h3{font-size:16px;margin:0;text-wrap:balance}
+.chart-src{grid-column:2;font-family:var(--font-mono);font-size:9.5px;letter-spacing:.04em;
+  color:var(--color-neutral-600);text-align:right;line-height:1.5;white-space:nowrap}
 .chart-src a{color:var(--color-neutral-500)}
 .live-pip{display:inline-flex;align-items:center;gap:5px;font-family:var(--font-mono);font-size:9px;letter-spacing:.08em;
   text-transform:uppercase;color:var(--color-accent)}
@@ -305,10 +305,12 @@ details.data-table th:first-child,details.data-table td:first-child{text-align:l
 .donut-center .v{font-family:var(--font-heading);font-size:21px;font-weight:500;letter-spacing:-.02em}
 .donut-center .k{font-family:var(--font-mono);font-size:9px;letter-spacing:.07em;text-transform:uppercase;color:var(--color-neutral-600);margin-top:2px}
 .donut-key{flex:1;min-width:150px;display:flex;flex-direction:column;gap:7px}
-.donut-key .row{display:grid;grid-template-columns:9px 1fr auto;align-items:center;gap:9px;font-size:12.5px}
+.donut-key .row{display:grid;grid-template-columns:9px minmax(0,1fr) auto;align-items:center;gap:9px;font-size:12.5px}
+.donut-key .lbl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .donut-key .sw{width:9px;height:9px;border-radius:2px}
 .donut-key .lbl{color:color-mix(in srgb,var(--color-text) 78%,transparent)}
-.donut-key .val{font-family:var(--font-mono);font-size:11.5px;color:var(--color-neutral-500);font-variant-numeric:tabular-nums}
+.donut-key .val{font-family:var(--font-mono);font-size:11.5px;color:var(--color-neutral-500);
+  font-variant-numeric:tabular-nums;white-space:nowrap}
 
 /* bar rows */
 .bar-rows{display:flex;flex-direction:column;gap:11px;margin-top:16px}
@@ -343,6 +345,16 @@ details.data-table th:first-child,details.data-table td:first-child{text-align:l
 @media (max-width:900px){
   .chart-grid{grid-template-columns:1fr}
 }
+
+.donut svg circle{cursor:pointer;transition:opacity .18s ease,stroke-width .18s ease}
+.donut.dim svg circle{opacity:.28}
+.donut svg circle.hot{opacity:1;stroke-width:16}
+.donut-key .row{cursor:pointer;border-radius:4px;padding:2px 4px;margin:-2px -4px;transition:background .15s ease}
+.donut-key .row:hover{background:color-mix(in srgb,#e9e9ed 7%,transparent)}
+#costChart .hit{fill:transparent;cursor:crosshair}
+#costChart .pt{transition:r .15s ease}
+#costChart .pt.hot{r:5.5}
+#costChart .vline{stroke:#9184d9;stroke-opacity:.4;stroke-width:1;opacity:0;transition:opacity .15s ease}
 
 /* motion */
 .hero-inner>*{animation:heroRise .85s cubic-bezier(.2,.85,.25,1) both}
@@ -1086,6 +1098,24 @@ details.data-table th:first-child,details.data-table td:first-child{text-align:l
     var svg = document.getElementById(svgId), key = document.getElementById(keyId);
     if(!svg) return;
     svg.innerHTML = '';
+    var wrap = svg.parentElement, centre = wrap.querySelector('.donut-center');
+    var rings = [];
+    if(centre && !centre.dataset.def) centre.dataset.def = centre.innerHTML;
+    function focus(i){
+      wrap.classList.add('dim');
+      rings.forEach(function(r, n){ r.classList.toggle('hot', n === i); });
+      if(centre){
+        var sl = slices[i], tot = slices.reduce(function(a, x){ return a + x.value; }, 0);
+        centre.innerHTML = '<div class="v">' + pct(sl.value, tot).toFixed(1) + '%</div>' +
+                           '<div class="k">' + esc(sl.label) + '</div>';
+      }
+    }
+    function blur(){
+      wrap.classList.remove('dim');
+      rings.forEach(function(r){ r.classList.remove('hot'); });
+      if(centre) centre.innerHTML = centre.dataset.def;
+    }
+    wrap.addEventListener('pointerleave', blur);
     var total = slices.reduce(function(a, s){ return a + s.value; }, 0);
     if(!total) return;
     var r = 38, C = 2 * Math.PI * r, offset = 0;
@@ -1102,16 +1132,22 @@ details.data-table th:first-child,details.data-table td:first-child{text-align:l
         ring.style.transition = 'opacity .5s ease ' + (i * 90) + 'ms';
         requestAnimationFrame(function(){ ring.style.opacity = 1; });
       }
+      ring.addEventListener('pointerenter', (function(n){ return function(){ focus(n); }; })(i));
+      rings.push(ring);
       svg.appendChild(ring);
       offset += frac;
     });
     if(key){
+      key.addEventListener('pointerleave', blur);
       key.innerHTML = slices.map(function(sl, i){
         return '<div class="row"><span class="sw" style="background:' + PALETTE[i % PALETTE.length] + '"></span>' +
           '<span class="lbl">' + esc(sl.label) + '</span>' +
           '<span class="val">' + (valueFmt ? valueFmt(sl.value) : fmtInt(sl.value)) +
           ' · ' + pct(sl.value, total).toFixed(1) + '%</span></div>';
       }).join('');
+      Array.prototype.forEach.call(key.children, function(row, i){
+        row.addEventListener('pointerenter', function(){ focus(i); });
+      });
     }
   }
 
@@ -1146,8 +1182,13 @@ details.data-table th:first-child,details.data-table td:first-child{text-align:l
     svg.appendChild(el('path', {class:'step', d:'M' + solid.join(' L')}));
     svg.appendChild(el('path', {class:'step target', d:'M' + x(3) + ',' + y(pts[3].value) + ' L' + x(4) + ',' + y(pts[4].value)}));
 
+    var vline = el('line', {class:'vline', x1:0, x2:0, y1:padT, y2:padT + plotH});
+    svg.appendChild(vline);
+    var dots = [];
     pts.forEach(function(p, i){
-      svg.appendChild(el('circle', {class:'pt', cx:x(i), cy:y(p.value), r:3.5}));
+      var dot = el('circle', {class:'pt', cx:x(i), cy:y(p.value), r:3.5});
+      dots.push(dot);
+      svg.appendChild(dot);
       var v = el('text', {class:'pt-label', x:x(i), y:y(p.value) - 10, 'text-anchor':'middle'});
       v.setAttribute('fill', '#d2cefd');
       v.textContent = '$' + fmtInt(p.value);
@@ -1159,6 +1200,24 @@ details.data-table th:first-child,details.data-table td:first-child{text-align:l
       sub.setAttribute('fill', '#595d6c');
       sub.textContent = p.sub;
       svg.appendChild(sub);
+    });
+
+    var band = plotW / (pts.length - 1);
+    pts.forEach(function(p, i){
+      var hit = el('rect', {class:'hit', x:x(i) - band / 2, y:padT, width:band, height:plotH});
+      var title = el('title');
+      title.textContent = p.label + ' (' + p.sub + ') — $' + fmtInt(p.value) + ' per kg to LEO';
+      hit.appendChild(title);
+      hit.addEventListener('pointerenter', function(){
+        vline.setAttribute('x1', x(i)); vline.setAttribute('x2', x(i));
+        vline.style.opacity = 1;
+        dots.forEach(function(dd, n){ dd.classList.toggle('hot', n === i); });
+      });
+      svg.appendChild(hit);
+    });
+    svg.addEventListener('pointerleave', function(){
+      vline.style.opacity = 0;
+      dots.forEach(function(dd){ dd.classList.remove('hot'); });
     });
   })();
 
