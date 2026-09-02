@@ -50,17 +50,61 @@ async function getSatellites() {
     15000 // this catalog is large, give it more time
   );
   if (!Array.isArray(data) || data.length === 0) return null;
-  return { count: data.length };
+
+  // The GP catalog already carries OBJECT_NAME and MEAN_MOTION on every row --
+  // enough to break the count down by constellation and by orbit regime
+  // without a second request.
+  const groups = { starlink: 0, oneweb: 0, iridium: 0, globalstar: 0, other: 0 };
+  const orbits = { leo: 0, meo: 0, geo: 0 };
+
+  data.forEach((o) => {
+    const name = String(o.OBJECT_NAME || '').toUpperCase();
+    if (name.startsWith('STARLINK')) groups.starlink++;
+    else if (name.startsWith('ONEWEB')) groups.oneweb++;
+    else if (name.startsWith('IRIDIUM')) groups.iridium++;
+    else if (name.startsWith('GLOBALSTAR')) groups.globalstar++;
+    else groups.other++;
+
+    // Mean motion is revolutions per day. A 24h orbit is 1.0 (geosynchronous);
+    // anything above ~11.25 rev/day is a period under 128 min, i.e. low Earth orbit.
+    const mm = Number(o.MEAN_MOTION);
+    if (!isFinite(mm) || mm <= 0) return;
+    if (mm >= 11.25) orbits.leo++;
+    else if (mm >= 1.4) orbits.meo++;
+    else orbits.geo++;
+  });
+
+  return { count: data.length, groups, orbits };
 }
 
 async function getNeo() {
   const data = await safeFetchJson(
-    `https://api.nasa.gov/neo/rest/v1/feed/today?detailed=false&api_key=${encodeURIComponent(NASA_API_KEY)}`
+    `https://api.nasa.gov/neo/rest/v1/feed/today?detailed=true&api_key=${encodeURIComponent(NASA_API_KEY)}`
   );
   if (!data || !data.near_earth_objects) return null;
   const all = Object.values(data.near_earth_objects).flat();
   const hazardous = all.filter((o) => o && o.is_potentially_hazardous_asteroid).length;
-  return { count: all.length, hazardous };
+  // Five closest approaches today, nearest first.
+  const objects = all
+    .map((o) => {
+      const approach = (o.close_approach_data && o.close_approach_data[0]) || null;
+      const dia = o.estimated_diameter && o.estimated_diameter.meters;
+      if (!approach || !dia) return null;
+      return {
+        name: String(o.name || '').replace(/^\(|\)$/g, ''),
+        diameterM: Math.round((dia.estimated_diameter_min + dia.estimated_diameter_max) / 2),
+        velocityKph: Math.round(Number(approach.relative_velocity.kilometers_per_hour) || 0),
+        missKm: Math.round(Number(approach.miss_distance.kilometers) || 0),
+        missLunar: Number(approach.miss_distance.lunar) || null,
+        hazardous: !!o.is_potentially_hazardous_asteroid,
+        url: o.nasa_jpl_url || null,
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.missKm - b.missKm)
+    .slice(0, 5);
+
+  return { count: all.length, hazardous, objects };
 }
 
 async function getApod() {
@@ -76,6 +120,25 @@ async function getApod() {
     credit: data.copyright ? String(data.copyright).trim() : 'NASA',
     date: data.date || '',
   };
+}
+
+async function getApodRange() {
+  const today = new Date();
+  const start = new Date(today.getTime() - 4 * 24 * 60 * 60 * 1000);
+  const fmtDate = (d) => d.toISOString().slice(0, 10);
+  const data = await safeFetchJson(
+    `https://api.nasa.gov/planetary/apod?start_date=${fmtDate(start)}&end_date=${fmtDate(today)}&api_key=${encodeURIComponent(NASA_API_KEY)}`
+  );
+  if (!Array.isArray(data)) return null;
+  return data
+    .filter((d) => d && d.media_type === 'image' && d.url)
+    .map((d) => ({
+      date: d.date,
+      title: d.title,
+      thumbUrl: d.url,
+      permalink: `https://apod.nasa.gov/apod/ap${String(d.date || '').replace(/-/g, '').slice(2)}.html`,
+    }))
+    .reverse();
 }
 
 async function getSpaceWeather() {
@@ -156,25 +219,60 @@ async function getLaunches() {
   };
 }
 
+async function getLaunchStats() {
+  // Recent launches from every provider -- enough of a window to make a
+  // success rate meaningful without paging.
+  const data = await safeFetchJson('https://ll.thespacedevs.com/2.2.0/launch/previous/?limit=100&ordering=-net&mode=list');
+  const list = (data && Array.isArray(data.results)) ? data.results : [];
+  if (list.length === 0) return null;
+
+  let success = 0, failure = 0, other = 0;
+  const byYear = {};
+  list.forEach((l) => {
+    const abbrev = (l.status && l.status.abbrev) || '';
+    if (abbrev === 'Success') success++;
+    else if (abbrev === 'Failure' || abbrev === 'Partial Failure') failure++;
+    else other++;
+    const year = String(l.net || '').slice(0, 4);
+    if (/^\d{4}$/.test(year)) byYear[year] = (byYear[year] || 0) + 1;
+  });
+
+  const rated = success + failure;
+  return {
+    sampleSize: list.length,
+    success,
+    failure,
+    other,
+    successRate: rated ? Math.round((success / rated) * 1000) / 10 : null,
+    windowFrom: list.length ? String(list[list.length - 1].net || '').slice(0, 10) : null,
+    windowTo: list.length ? String(list[0].net || '').slice(0, 10) : null,
+    byYear,
+  };
+}
+
 async function getNews() {
-  const data = await safeFetchJson('https://api.spaceflightnewsapi.net/v4/articles/?limit=6&ordering=-published_at');
+  const data = await safeFetchJson('https://api.spaceflightnewsapi.net/v4/articles/?limit=12&ordering=-published_at');
   if (!data || !Array.isArray(data.results)) return null;
   return data.results.map((a) => ({
     title: a.title,
     url: a.url,
     site: a.news_site || 'Space news',
     publishedAt: a.published_at || null,
+    imageUrl: a.image_url || null,
+    summary: a.summary ? String(a.summary).slice(0, 180) : '',
   }));
 }
 
 module.exports = async (req, res) => {
   res.setHeader('content-type', 'application/json');
 
-  const [satellites, neo, apod, launches, news, spaceWeather, epic] = await Promise.all([
+  const [satellites, neo, apod, apodRange, launches, launchStats, news, spaceWeather, epic] = await Promise.all([
     getSatellites(),
     getNeo(),
     getApod(),
+    getApodRange(),
     getLaunches(),
+    getLaunchStats(),
     getNews(),
     getSpaceWeather(),
     getEpic(),
@@ -191,7 +289,9 @@ module.exports = async (req, res) => {
     satellites,
     neo,
     apod,
+    apodRange,
     launches,
+    launchStats,
     news,
     spaceWeather,
     epic,
